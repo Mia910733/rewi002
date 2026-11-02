@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>陳科翔的 BMI 計算器</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+        /* 隱藏數字輸入框的上下箭頭 */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        /* 結果顯示動畫 */
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden transition-all duration-300">
+        <!-- 標頭 -->
+        <div class="bg-indigo-600 p-6 text-center">
+            <h1 class="text-2xl font-bold text-white tracking-wide">陳科翔的 BMI 計算器</h1>
+            <p class="text-indigo-200 mt-1 text-sm">了解您的身體質量指數</p>
+        </div>
+
+        <div class="p-6 sm:p-8">
+            <!-- 輸入表單 -->
+            <form id="bmiForm" class="space-y-5" onsubmit="event.preventDefault(); calculateBMI();">
+                <!-- 身高輸入 -->
+                <div>
+                    <label for="height" class="block text-sm font-medium text-slate-700 mb-1">身高 (公分)</label>
+                    <div class="relative">
+                        <input type="number" id="height" step="0.1" placeholder="例如：170" 
+                            class="w-full pl-4 pr-12 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow text-slate-700 text-lg">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">cm</span>
+                    </div>
+                </div>
+
+                <!-- 體重輸入 -->
+                <div>
+                    <label for="weight" class="block text-sm font-medium text-slate-700 mb-1">體重 (公斤)</label>
+                    <div class="relative">
+                        <input type="number" id="weight" step="0.1" placeholder="例如：65" 
+                            class="w-full pl-4 pr-12 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow text-slate-700 text-lg">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">kg</span>
+                    </div>
+                </div>
+
+                <!-- 錯誤訊息提示 -->
+                <div id="errorMsg" class="hidden text-red-500 text-sm font-medium text-center">
+                    請輸入有效的身高與體重數值！
+                </div>
+
+                <!-- 計算按鈕 -->
+                <button type="submit" 
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition-colors duration-200 shadow-md hover:shadow-lg focus:ring-4 focus:ring-indigo-300 outline-none mt-2">
+                    開始計算
+                </button>
+            </form>
+
+            <!-- 顯示結果區塊 -->
+            <div id="resultCard" class="hidden mt-8 pt-6 border-t border-slate-200">
+                <h2 class="text-center text-slate-500 text-sm font-medium mb-2">您的計算結果</h2>
+                
+                <div class="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50 border border-slate-100">
+                    <div class="text-5xl font-bold text-slate-800 tracking-tight" id="bmiValue">
+                        --
+                    </div>
+                    
+                    <div id="bmiStatus" class="mt-3 px-4 py-1.5 rounded-full text-sm font-semibold inline-flex items-center gap-1.5">
+                        <!-- 狀態會透過 JS 動態插入 -->
+                    </div>
+                </div>
+
+                <!-- 狀態說明表 (選用參考) -->
+                <div class="mt-5 text-xs text-slate-400 flex justify-between px-2">
+                    <span>過輕 < 18.5</span>
+                    <span>正常 18.5 - 24</span>
+                    <span>過重 ≧ 24</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculateBMI() {
+            const heightInput = document.getElementById('height').value;
+            const weightInput = document.getElementById('weight').value;
+            const errorMsg = document.getElementById('errorMsg');
+            const resultCard = document.getElementById('resultCard');
+            const bmiValueDisplay = document.getElementById('bmiValue');
+            const bmiStatusDisplay = document.getElementById('bmiStatus');
+
+            // 重置錯誤與動畫狀態
+            errorMsg.classList.add('hidden');
+            resultCard.classList.remove('fade-in');
+            
+            // 強制重繪以重啟動畫
+            void resultCard.offsetWidth; 
+
+            // 數值驗證
+            if (!heightInput || !weightInput || heightInput <= 0 || weightInput <= 0) {
+                errorMsg.classList.remove('hidden');
+                resultCard.classList.add('hidden');
+                return;
+            }
+
+            // 計算 BMI (體重(kg) / 身高(m)平方)
+            const heightInMeters = heightInput / 100;
+            const bmi = weightInput / (heightInMeters * heightInMeters);
+            
+            // 四捨五入到小數點後一位
+            const roundedBMI = bmi.toFixed(1);
+
+            // 顯示結果區塊
+            resultCard.classList.remove('hidden');
+            resultCard.classList.add('fade-in');
+            bmiValueDisplay.innerText = roundedBMI;
+
+            // 判斷狀態並設定顏色 (根據台灣國健署標準)
+            let statusText = '';
+            let statusClasses = '';
+            let iconSvg = '';
+
+            if (bmi < 18.5) {
+                statusText = '體重過輕';
+                statusClasses = 'bg-blue-100 text-blue-700 border border-blue-200';
+                iconSvg = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else if (bmi >= 18.5 && bmi < 24) {
+                statusText = '正常範圍';
+                statusClasses = 'bg-emerald-100 text-emerald-700 border border-emerald-200';
+                iconSvg = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else if (bmi >= 24 && bmi < 27) {
+                statusText = '過重';
+                statusClasses = 'bg-orange-100 text-orange-700 border border-orange-200';
+                iconSvg = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
+            } else {
+                statusText = bmi >= 35 ? '重度肥胖' : (bmi >= 30 ? '中度肥胖' : '輕度肥胖');
+                statusClasses = 'bg-red-100 text-red-700 border border-red-200';
+                iconSvg = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            }
+
+            // 更新狀態 UI
+            bmiStatusDisplay.className = `mt-3 px-4 py-1.5 rounded-full text-sm font-semibold inline-flex items-center gap-1.5 ${statusClasses}`;
+            bmiStatusDisplay.innerHTML = `${iconSvg} ${statusText}`;
+        }
+    </script>
+</body>
+</html>
